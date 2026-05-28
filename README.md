@@ -1,6 +1,6 @@
-# Yunqi Temu Product Automation
+# Yunqi_Data_Web_Scraper
 
-三个脚本用于从云启数据 Temu 页面采集满足条件的商品，并生成或更新 Excel 选品表格。
+本项目包含三个脚本. 三个脚本用于从云启数据 Temu 页面采集满足条件的商品，并生成或更新 Excel 选品表格。
 
 ## 功能
 
@@ -34,7 +34,7 @@ YUNQI_USERNAME=your_username
 YUNQI_PASSWORD=your_password
 ```
 
-把 Excel 模板放到：
+该脚本会把输出 Excel 表格放到以下位置：
 
 ```text
 templates/选品表格-模板.xlsx
@@ -89,7 +89,7 @@ cd script3_append_new_products
 ./run_yunqi_append_new_products.sh /path/to/base.xlsx
 ```
 
-脚本三不会生成新的最终表格，而是直接修改输入的 `/path/to/base.xlsx`：
+脚本三不会生成新的最终表格，而是直接修改输入的原有表格 `/path/to/base.xlsx`：
 
 - 已存在的商品 ID：跳过
 - 今日新增商品 ID：采集完整信息并追加到表格底部
