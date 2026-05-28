@@ -1,0 +1,10 @@
+.env
+outputs/
+**/outputs/
+node_modules/
+__pycache__/
+*.pyc
+.DS_Store
+*.log
+chrome-profile/
+**/chrome-profile/

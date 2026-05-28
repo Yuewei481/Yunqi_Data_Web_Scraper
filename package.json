@@ -1,0 +1,14 @@
+{
+  "name": "yunqi-temu-product-automation",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "script1": "cd script1_yunqi_scraper && ./run_yunqi_scraper.sh",
+    "script2": "cd script2_daily_compare && ./run_yunqi_daily_compare.sh",
+    "script3": "cd script3_append_new_products && ./run_yunqi_append_new_products.sh"
+  },
+  "dependencies": {
+    "playwright": "^1.44.0"
+  }
+}
