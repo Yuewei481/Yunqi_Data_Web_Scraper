@@ -16,35 +16,64 @@
 
 这些都可以在 `.env` 中修改。
 
+
 ## 安装
 
-需要先安装 Node.js、Python 3、Google Chrome。
+请先安装以下软件：
+
+* Node.js
+* Python 3
+* Google Chrome
+
+然后克隆项目并进入项目目录：
+
+```bash
+git clone <你的仓库地址>
+cd Yunqi-Data-Scraper
+```
+
+创建 Python 独立虚拟环境：
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+安装项目依赖：
 
 ```bash
 npm install
-python3 -m pip install -r requirements.txt
+pip install -r requirements.txt
 npx playwright install chromium
+```
+
+复制环境配置文件：
+
+```bash
 cp .env.example .env
 ```
 
-然后编辑 `.env`，填写自己的云启数据账号密码：
+随后编辑 `.env`，填写自己的云启数据账号密码：
 
-```bash
+```env
 YUNQI_USERNAME=your_username
 YUNQI_PASSWORD=your_password
 ```
 
-该脚本会把输出 Excel 表格放到以下位置：
+默认情况下，脚本会使用以下 Excel 模板：
 
 ```text
 templates/选品表格-模板.xlsx
 ```
 
-或者在 `.env` 中设置：
+如果需要自定义 Excel 模板路径，可在 `.env` 中配置：
 
-```bash
+```env
 EXCEL_TEMPLATE=/absolute/path/to/选品表格-模板.xlsx
 ```
+
+完成以上配置后，即可运行对应脚本。
+
 
 ## 启动方式
 
