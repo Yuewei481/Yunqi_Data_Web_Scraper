@@ -29,7 +29,7 @@
 
 ```bash
 git clone <你的仓库地址>
-cd Yunqi-Data-Scraper
+cd Yunqi_Data_Web_Scraper
 ```
 
 创建 Python 独立虚拟环境：
