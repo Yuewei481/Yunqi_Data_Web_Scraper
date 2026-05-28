@@ -19,6 +19,9 @@ if [[ -z "${EXCEL_TEMPLATE:-}" ]]; then
 elif [[ "$EXCEL_TEMPLATE" != /* ]]; then
   export EXCEL_TEMPLATE="$REPO_DIR/$EXCEL_TEMPLATE"
 fi
+if [[ -n "${OUTPUT_DIR:-}" && "$OUTPUT_DIR" != /* ]]; then
+  export OUTPUT_DIR="$SCRIPT_DIR/$OUTPUT_DIR"
+fi
 NODE="${NODE:-node}"
 
 "$NODE" yunqi_product_scraper.mjs

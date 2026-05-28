@@ -77,10 +77,12 @@ EXCEL_TEMPLATE=/absolute/path/to/选品表格-模板.xlsx
 
 ## 启动方式
 
+下面的 `/absolute/path/to/Yunqi_Data_Web_Scraper` 请替换成你本机项目的绝对路径。
+
 ### 脚本一：生成今日完整选品表格
 
 ```bash
-cd script1_yunqi_scraper
+cd /absolute/path/to/Yunqi_Data_Web_Scraper/script1_yunqi_scraper
 ./run_yunqi_scraper.sh
 ```
 
@@ -93,7 +95,7 @@ script1_yunqi_scraper/outputs/yunqi-pop-up-greeting-card/选品表格-pop-up-gre
 ### 脚本二：对比昨天和今天
 
 ```bash
-cd script2_daily_compare
+cd /absolute/path/to/Yunqi_Data_Web_Scraper/script2_daily_compare
 ./run_yunqi_daily_compare.sh /path/to/yesterday.xlsx
 ```
 
@@ -114,7 +116,7 @@ script2_daily_compare/outputs/yunqi-pop-up-greeting-card/选品表格-pop-up-gre
 ### 脚本三：只追加新商品到已有表格
 
 ```bash
-cd script3_append_new_products
+cd /absolute/path/to/Yunqi_Data_Web_Scraper/script3_append_new_products
 ./run_yunqi_append_new_products.sh /path/to/base.xlsx
 ```
 
@@ -137,6 +139,34 @@ MONTHLY_MIN=1000
 EXCEL_TEMPLATE=templates/选品表格-模板.xlsx
 HEADLESS=0
 ```
+
+### 修改输出位置
+
+默认情况下，脚本会输出到当前脚本文件夹里的：
+
+```text
+outputs/yunqi-pop-up-greeting-card/
+```
+
+如果想把输出位置改到统一目录，可以在 `.env` 里添加绝对路径：
+
+```bash
+OUTPUT_DIR=/absolute/path/to/yunqi-outputs
+```
+
+例如：
+
+```bash
+OUTPUT_DIR=/Users/yourname/Desktop/yunqi-outputs
+```
+
+也可以只对某一次运行临时指定：
+
+```bash
+OUTPUT_DIR=/Users/yourname/Desktop/yunqi-outputs ./run_yunqi_scraper.sh
+```
+
+脚本一会把完整选品表格输出到这个目录。脚本二会把今日临时表格和差异表输出到这个目录。脚本三会把临时今日表格放到这个目录，但最终仍然直接修改你输入的 Excel 表格本身。
 
 ## 注意事项
 

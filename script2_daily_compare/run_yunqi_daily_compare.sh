@@ -20,10 +20,14 @@ fi
 
 YESTERDAY_XLSX="$1"
 TODAY_DATE="$(date +%F)"
-OUTPUT_DIR="outputs/yunqi-pop-up-greeting-card"
+OUTPUT_DIR="${OUTPUT_DIR:-outputs/yunqi-pop-up-greeting-card}"
+if [[ "$OUTPUT_DIR" != /* ]]; then
+  OUTPUT_DIR="$SCRIPT_DIR/$OUTPUT_DIR"
+fi
 TODAY_XLSX="$OUTPUT_DIR/选品表格-pop-up-greeting-card-${TODAY_DATE}.xlsx"
 DIFF_XLSX="${2:-$OUTPUT_DIR/选品表格-pop-up-greeting-card-差异-${TODAY_DATE}.xlsx}"
 PYTHON="${CODEX_PYTHON:-${PYTHON:-python3}}"
 
+mkdir -p "$OUTPUT_DIR"
 ./run_yunqi_scraper.sh
 "$PYTHON" compare_yunqi_daily_excel.py "$YESTERDAY_XLSX" "$TODAY_XLSX" "$DIFF_XLSX"

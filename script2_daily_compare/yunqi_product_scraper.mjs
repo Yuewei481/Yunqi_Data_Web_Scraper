@@ -5,7 +5,9 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 
 const ROOT = path.resolve(import.meta.dirname);
-const OUTPUT_DIR = path.join(ROOT, "outputs", "yunqi-pop-up-greeting-card");
+const OUTPUT_DIR = process.env.OUTPUT_DIR
+  ? path.resolve(ROOT, process.env.OUTPUT_DIR)
+  : path.join(ROOT, "outputs", "yunqi-pop-up-greeting-card");
 const IMAGE_DIR = path.join(OUTPUT_DIR, "images");
 const DATA_PATH = path.join(OUTPUT_DIR, "products.json");
 const EXISTING_PRODUCT_IDS_PATH = process.env.EXISTING_PRODUCT_IDS_PATH || "";
