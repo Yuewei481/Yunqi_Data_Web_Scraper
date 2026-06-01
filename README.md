@@ -25,12 +25,17 @@
 - Git
 - Node.js 22 LTS 或更高版本
 - Python 3
-- Google Chrome
+- Google Chrome，可选；默认使用 Playwright 自带的 Chromium
 
 如果使用 Homebrew：
 
 ```bash
 brew install git node python
+```
+
+如果你想改用自己电脑上的 Google Chrome，再安装 Chrome：
+
+```bash
 brew install --cask google-chrome
 ```
 
@@ -63,6 +68,8 @@ source venv/bin/activate
 
 ### 4. 安装依赖
 
+这里的 `npx playwright install chromium` 会安装 Playwright 自带的 Chromium。默认情况下，脚本会使用这个浏览器，不需要额外配置 Chrome 路径。
+
 ```bash
 npm install
 pip install -r requirements.txt
@@ -87,6 +94,11 @@ MONTHLY_MIN=1000
 EXCEL_TEMPLATE=templates/选品表格-模板.xlsx
 HEADLESS=0
 PYTHON=python3
+```
+
+默认不用填写 `CHROME_PATH`。如果 Playwright 自带 Chromium 无法正常运行，或者你想强制使用本机 Chrome，再添加：
+
+```bash
 CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 ```
 
@@ -99,7 +111,7 @@ Windows 需要先安装：
 - Git for Windows
 - Node.js 22 LTS 或更高版本
 - Python 3
-- Google Chrome
+- Google Chrome，可选；默认使用 Playwright 自带的 Chromium
 
 下载地址：
 
@@ -107,6 +119,8 @@ Windows 需要先安装：
 - Node.js: https://nodejs.org/
 - Python: https://www.python.org/downloads/windows/
 - Chrome: https://www.google.com/chrome/
+
+Chrome 不是默认必需项。只有当 Playwright 自带 Chromium 无法正常运行，或者你想强制使用本机 Chrome 时，才需要安装并配置 `CHROME_PATH`。
 
 安装 Python 时建议勾选：
 
@@ -156,6 +170,8 @@ python -m venv venv
 
 ### 5. 安装依赖
 
+这里的 `npx playwright install chromium` 会安装 Playwright 自带的 Chromium。默认情况下，脚本会使用这个浏览器，不需要额外配置 Chrome 路径。
+
 ```bash
 npm install
 pip install -r requirements.txt
@@ -180,6 +196,11 @@ MONTHLY_MIN=1000
 EXCEL_TEMPLATE=templates/选品表格-模板.xlsx
 HEADLESS=0
 PYTHON=python
+```
+
+默认不用填写 `CHROME_PATH`。如果 Playwright 自带 Chromium 无法正常运行，或者你想强制使用本机 Chrome，再添加：
+
+```bash
 CHROME_PATH="C:/Program Files/Google/Chrome/Application/chrome.exe"
 ```
 
