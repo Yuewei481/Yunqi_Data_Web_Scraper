@@ -1,4 +1,4 @@
-# Yunqi_Data_Web_Scraper
+# Yunqi_Data_Web_Script
 
 云启数据爬虫。项目包含三个脚本，用于从云启数据 Temu 页面采集满足条件的商品，并生成、对比或更新 Excel 选品表格。
 
