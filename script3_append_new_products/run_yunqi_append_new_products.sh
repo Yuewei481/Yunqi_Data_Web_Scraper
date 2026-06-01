@@ -6,6 +6,10 @@ cd "$(dirname "$0")"
 SCRIPT_DIR="$(pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+is_absolute_path() {
+  [[ "$1" == /* || "$1" =~ ^[A-Za-z]:[/\\] ]]
+}
+
 if [[ -f "$REPO_DIR/.env" ]]; then
   set -a
   # shellcheck disable=SC1091
@@ -21,7 +25,7 @@ fi
 BASE_XLSX="$1"
 TODAY_DATE="$(date +%F)"
 OUTPUT_DIR="${OUTPUT_DIR:-outputs/yunqi-pop-up-greeting-card}"
-if [[ "$OUTPUT_DIR" != /* ]]; then
+if ! is_absolute_path "$OUTPUT_DIR"; then
   OUTPUT_DIR="$SCRIPT_DIR/$OUTPUT_DIR"
 fi
 TODAY_XLSX="$OUTPUT_DIR/选品表格-pop-up-greeting-card-${TODAY_DATE}.xlsx"
