@@ -326,8 +326,6 @@ OUTPUT_DIR="C:/Users/你的用户名/Desktop/yunqi-outputs" ./run_yunqi_scraper.
 
 ## 五、常见注意事项
 
-- 不要提交 `.env`，里面有账号密码。
-- 不要提交 `outputs/`，里面有采集结果、图片、调试 HTML、Chrome profile。
 - `.env` 中只要值里有空格，就必须使用英文双引号，例如 `YUNQI_KEYWORD="pop up greeting card"`。
 - Windows 路径推荐使用 `/d/...` 或 `C:/...`，不要混用中文引号。
 - 第一次运行会打开浏览器并登录云启数据，网站响应较慢时请等待。
