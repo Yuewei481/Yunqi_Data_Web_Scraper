@@ -113,13 +113,6 @@ Windows 需要先安装：
 - Python 3
 - Google Chrome，可选；默认使用 Playwright 自带的 Chromium
 
-下载地址：
-
-- Git: https://git-scm.com/download/win
-- Node.js: https://nodejs.org/
-- Python: https://www.python.org/downloads/windows/
-- Chrome: https://www.google.com/chrome/
-
 Chrome 不是默认必需项。只有当 Playwright 自带 Chromium 无法正常运行，或者你想强制使用本机 Chrome 时，才需要安装并配置 `CHROME_PATH`。
 
 安装 Python 时建议勾选：
