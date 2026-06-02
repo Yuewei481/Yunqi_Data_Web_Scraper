@@ -5,6 +5,7 @@ cd "$(dirname "$0")"
 
 SCRIPT_DIR="$(pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+CALLER_OUTPUT_DIR="${OUTPUT_DIR:-}"
 
 is_absolute_path() {
   [[ "$1" == /* || "$1" =~ ^[A-Za-z]:[/\\] ]]
@@ -15,6 +16,9 @@ if [[ -f "$REPO_DIR/.env" ]]; then
   # shellcheck disable=SC1091
   source "$REPO_DIR/.env"
   set +a
+fi
+if [[ -n "$CALLER_OUTPUT_DIR" ]]; then
+  export OUTPUT_DIR="$CALLER_OUTPUT_DIR"
 fi
 
 export CODEX_PYTHON="${CODEX_PYTHON:-${PYTHON:-python3}}"
