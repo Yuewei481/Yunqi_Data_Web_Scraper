@@ -18,7 +18,7 @@ const USERNAME = process.env.YUNQI_USERNAME || "";
 const PASSWORD = process.env.YUNQI_PASSWORD || "";
 const LOGIN_URL = "https://www.yunqishuju.com/login";
 const HEADLESS = process.env.HEADLESS === "1";
-const CHROME_PATH = process.env.CHROME_PATH || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+const CHROME_PATH = process.env.CHROME_PATH || "";
 const CHROME_ARGS = [
   "--disable-session-crashed-bubble",
   "--disable-infobars",
@@ -1681,9 +1681,10 @@ async function main() {
   await fs.mkdir(IMAGE_DIR, { recursive: true });
   let browser = null;
   let context;
+  const executablePathOption = CHROME_PATH ? { executablePath: CHROME_PATH } : {};
   if (USE_PERSISTENT_CONTEXT) {
     context = await chromium.launchPersistentContext(USER_DATA_DIR, {
-      executablePath: CHROME_PATH,
+      ...executablePathOption,
       headless: HEADLESS,
       args: CHROME_ARGS,
       slowMo: HEADLESS ? 0 : 80,
@@ -1693,7 +1694,7 @@ async function main() {
     });
   } else {
     browser = await chromium.launch({
-      executablePath: CHROME_PATH,
+      ...executablePathOption,
       headless: HEADLESS,
       args: CHROME_ARGS,
       slowMo: HEADLESS ? 0 : 80,
