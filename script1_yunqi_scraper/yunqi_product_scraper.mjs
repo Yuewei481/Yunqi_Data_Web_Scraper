@@ -34,6 +34,7 @@ const MONTHLY_MIN = Number(process.env.MONTHLY_MIN || "1000");
 const MIN_IMAGES_PER_PRODUCT = Number(process.env.MIN_IMAGES_PER_PRODUCT || "2");
 const IMAGE_RETRY_MAX = Number(process.env.IMAGE_RETRY_MAX || "6");
 const IMAGE_RETRY_WAIT_MS = Number(process.env.IMAGE_RETRY_WAIT_MS || "10000");
+const HOVER_IMAGE_WAIT_MS = Number(process.env.HOVER_IMAGE_WAIT_MS || "3000");
 const DUPLICATE_IMAGE_RETRY_MAX = Number(process.env.DUPLICATE_IMAGE_RETRY_MAX || "2");
 const USE_PERSISTENT_CONTEXT = process.env.PERSISTENT_CONTEXT !== "0";
 const MAIN_ROW_SELECTOR = ".el-table__body-wrapper tbody tr.el-table__row";
@@ -1132,6 +1133,7 @@ async function collectHoverImageUrls(page, row, rowSelector) {
     } else {
       await imageLocator.hover({ force: true }).catch(() => {});
     }
+    await page.waitForTimeout(HOVER_IMAGE_WAIT_MS);
     const targetRect = box
       ? { left: box.x, right: box.x + box.width, top: box.y, bottom: box.y + box.height }
       : await imageLocator.evaluate((el) => {

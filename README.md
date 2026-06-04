@@ -13,6 +13,7 @@
 - 日销 `>= 30`
 - 月销 `>= 1000`
 - 关键词 `pop up greeting card`
+- 商品图悬浮后默认等待 `3000ms` 再读取图片
 
 这些都可以在 `.env` 中修改。
 
@@ -91,6 +92,7 @@ YUNQI_PASSWORD="你的云启密码"
 YUNQI_KEYWORD="pop up greeting card"
 DAILY_MIN=30
 MONTHLY_MIN=1000
+HOVER_IMAGE_WAIT_MS=3000
 EXCEL_TEMPLATE=templates/选品表格-模板.xlsx
 HEADLESS=0
 PYTHON=python3
@@ -186,6 +188,7 @@ YUNQI_PASSWORD="你的云启密码"
 YUNQI_KEYWORD="pop up greeting card"
 DAILY_MIN=30
 MONTHLY_MIN=1000
+HOVER_IMAGE_WAIT_MS=3000
 EXCEL_TEMPLATE=templates/选品表格-模板.xlsx
 HEADLESS=0
 PYTHON=python
