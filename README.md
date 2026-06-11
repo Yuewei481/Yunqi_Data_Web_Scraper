@@ -12,7 +12,8 @@
 
 - 日销 `>= 30`
 - 月销 `>= 1000`
-- 关键词 `pop up greeting card`
+- 关键词可填写一个，也可用英文逗号分隔多个
+- 可选 Temu 大分类/小分类限制
 - 商品图悬浮后默认等待 `3000ms` 再读取图片
 
 这些都可以在 `.env` 中修改。
@@ -89,10 +90,12 @@ Mac 示例：
 ```bash
 YUNQI_USERNAME="你的云启账号"
 YUNQI_PASSWORD="你的云启密码"
-YUNQI_KEYWORD="pop up greeting card"
+YUNQI_KEYWORD="关键词一, 关键词二"
 DAILY_MIN=30
 MONTHLY_MIN=1000
 HOVER_IMAGE_WAIT_MS=3000
+YUNQI_CATEGORY_PARENT=""
+YUNQI_CATEGORY_CHILDREN=""
 EXCEL_TEMPLATE=templates/选品表格-模板.xlsx
 HEADLESS=0
 PYTHON=python3
@@ -102,6 +105,25 @@ PYTHON=python3
 
 ```bash
 CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+```
+
+关键词和分类说明：
+
+```bash
+# 多个关键词用英文逗号分隔，脚本会依次搜索并写入同一张表格
+YUNQI_KEYWORD="关键词一, 关键词二"
+
+# 不需要分类限制时留空
+YUNQI_CATEGORY_PARENT=""
+YUNQI_CATEGORY_CHILDREN=""
+
+# 只限制大分类时，只填写大分类
+YUNQI_CATEGORY_PARENT="大分类名称"
+YUNQI_CATEGORY_CHILDREN=""
+
+# 限制到多个小分类时，小分类用英文逗号分隔
+YUNQI_CATEGORY_PARENT="大分类名称"
+YUNQI_CATEGORY_CHILDREN="小分类一, 小分类二"
 ```
 
 ## 二、Windows 安装
@@ -185,10 +207,12 @@ Windows 示例：
 ```bash
 YUNQI_USERNAME="你的云启账号"
 YUNQI_PASSWORD="你的云启密码"
-YUNQI_KEYWORD="pop up greeting card"
+YUNQI_KEYWORD="关键词一, 关键词二"
 DAILY_MIN=30
 MONTHLY_MIN=1000
 HOVER_IMAGE_WAIT_MS=3000
+YUNQI_CATEGORY_PARENT=""
+YUNQI_CATEGORY_CHILDREN=""
 EXCEL_TEMPLATE=templates/选品表格-模板.xlsx
 HEADLESS=0
 PYTHON=python

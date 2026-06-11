@@ -14,6 +14,9 @@ const EXISTING_PRODUCT_IDS_PATH = process.env.EXISTING_PRODUCT_IDS_PATH || "";
 const TEMPLATE_PATH = process.env.EXCEL_TEMPLATE || path.resolve(ROOT, "..", "templates", "选品表格-模板.xlsx");
 const PYTHON = process.env.CODEX_PYTHON || process.env.PYTHON || "python3";
 const KEYWORD = process.env.YUNQI_KEYWORD || "pop up greeting card";
+const KEYWORDS = splitEnvList(KEYWORD);
+const CATEGORY_PARENT = normalizeText(process.env.YUNQI_CATEGORY_PARENT || "");
+const CATEGORY_CHILDREN = splitEnvList(process.env.YUNQI_CATEGORY_CHILDREN || "");
 const USERNAME = process.env.YUNQI_USERNAME || "";
 const PASSWORD = process.env.YUNQI_PASSWORD || "";
 const LOGIN_URL = "https://www.yunqishuju.com/login";
@@ -40,6 +43,13 @@ const USE_PERSISTENT_CONTEXT = process.env.PERSISTENT_CONTEXT !== "0";
 const MAIN_ROW_SELECTOR = ".el-table__body-wrapper tbody tr.el-table__row";
 const DEBUG_RESPONSES = process.env.DEBUG_RESPONSES === "1";
 const responseDebugRecords = [];
+
+function splitEnvList(value) {
+  return String(value || "")
+    .split(",")
+    .map((item) => normalizeText(item))
+    .filter(Boolean);
+}
 
 const SELECTORS = {
   username: [
@@ -494,7 +504,7 @@ async function saveDebug(page, name) {
   await fs.writeFile(path.join(OUTPUT_DIR, `${safeName}.html`), await page.content()).catch(() => {});
 }
 
-async function searchKeyword(page) {
+async function searchKeyword(page, keyword, applyFilters = false) {
   console.log("登录完成，进入 Temu 页面...");
   await enterTemuHome(page);
   await waitForTemuOrLoginShell(page);
@@ -515,14 +525,133 @@ async function searchKeyword(page) {
     await saveDebug(page, "search-input-not-found");
     throw new Error("没有找到左上角关键词搜索框。");
   }
-  console.log(`在 Temu 左上角搜索框搜索：${KEYWORD}`);
-  await typeLikeHuman(input, KEYWORD);
+  if (applyFilters) await applyCategoryFilter(page);
+  console.log(`在 Temu 左上角搜索框搜索：${keyword}`);
+  await typeLikeHuman(input, keyword);
   await humanPause();
 
   await clickTopKeywordSearchButton(page, input);
   await page.waitForTimeout(1200);
   console.log("已点击左上角搜索按钮，等待搜索结果...");
   await waitForSearchResults(page);
+}
+
+async function openCategoryDropdown(page) {
+  if (!CATEGORY_PARENT) return false;
+  const opened = await page.evaluate(() => {
+    const visible = (el) => {
+      const style = window.getComputedStyle(el);
+      const rect = el.getBoundingClientRect();
+      return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+    };
+    const labels = Array.from(document.querySelectorAll("body *")).filter((el) => {
+      const text = (el.textContent || "").replace(/\s+/g, "").trim();
+      const rect = el.getBoundingClientRect();
+      return visible(el) && text === "分类" && rect.top > 180 && rect.top < 420;
+    });
+    const label = labels.sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left)[0];
+    if (!label) return false;
+    const labelRect = label.getBoundingClientRect();
+    const candidates = Array.from(document.querySelectorAll("input, .el-input, .el-select, [role='combobox'], button, .el-button"))
+      .filter(visible)
+      .map((el) => ({ el, rect: el.getBoundingClientRect() }))
+      .filter((item) => {
+        const sameRow = item.rect.top < labelRect.bottom + 28 && item.rect.bottom > labelRect.top - 28;
+        const toRight = item.rect.left >= labelRect.right - 12;
+        const near = item.rect.left < labelRect.right + 260;
+        return sameRow && toRight && near;
+      })
+      .sort((a, b) => a.rect.left - b.rect.left);
+    const target = candidates[0]?.el;
+    if (!target) return false;
+    target.dispatchEvent(new MouseEvent("mousemove", { bubbles: true }));
+    target.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    target.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+    target.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    return true;
+  });
+  if (!opened) {
+    await saveDebug(page, "category-dropdown-not-found");
+    throw new Error("没有找到分类筛选下拉框。");
+  }
+  await page.waitForTimeout(700);
+  return true;
+}
+
+async function clickCategoryOption(page, label, options = {}) {
+  const clicked = await page.evaluate(({ label, preferCheckbox, preferExpand }) => {
+    const normalize = (value) => String(value || "")
+      .replace(/\s+/g, " ")
+      .replace(/[（(].*?[）)]/g, "")
+      .trim()
+      .toLowerCase();
+    const needle = normalize(label);
+    const visible = (el) => {
+      const style = window.getComputedStyle(el);
+      const rect = el.getBoundingClientRect();
+      return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+    };
+    const roots = Array.from(document.querySelectorAll(".el-popper, .el-select-dropdown, .el-cascader-panel, .el-cascader-menu, body"))
+      .filter(visible);
+    const candidates = [];
+    for (const root of roots) {
+      for (const el of Array.from(root.querySelectorAll("li, label, .el-checkbox, .el-cascader-node, .el-select-dropdown__item, div, span"))) {
+        if (!visible(el)) continue;
+        const text = (el.textContent || "").replace(/\s+/g, " ").trim();
+        if (!text || text.length > 140) continue;
+        const normalized = normalize(text);
+        if (normalized === needle || normalized.startsWith(`${needle} `) || normalized.includes(needle)) {
+          candidates.push(el);
+        }
+      }
+    }
+    const candidate = candidates
+      .map((el) => ({ el, rect: el.getBoundingClientRect(), score: Math.abs(normalize(el.textContent || "").length - needle.length) }))
+      .sort((a, b) => a.score - b.score || a.rect.left - b.rect.left)[0]?.el;
+    if (!candidate) return false;
+
+    let target = candidate;
+    if (preferCheckbox) {
+      target = candidate.querySelector(".el-checkbox__input, input[type='checkbox']") ||
+        candidate.closest("label")?.querySelector(".el-checkbox__input, input[type='checkbox']") ||
+        candidate;
+    } else if (preferExpand) {
+      target = candidate.querySelector(".el-cascader-node__postfix, .el-icon-arrow-right") ||
+        Array.from(candidate.querySelectorAll("span, i, svg")).at(-1) ||
+        candidate;
+    }
+
+    target.dispatchEvent(new MouseEvent("mousemove", { bubbles: true }));
+    target.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    target.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+    target.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    return true;
+  }, { label, preferCheckbox: Boolean(options.preferCheckbox), preferExpand: Boolean(options.preferExpand) });
+  if (!clicked) {
+    await saveDebug(page, `category-option-not-found-${label}`);
+    throw new Error(`没有找到分类选项：${label}`);
+  }
+  await page.waitForTimeout(700);
+}
+
+async function applyCategoryFilter(page) {
+  if (!CATEGORY_PARENT) return;
+  console.log(
+    CATEGORY_CHILDREN.length
+      ? `应用分类筛选：${CATEGORY_PARENT} / ${CATEGORY_CHILDREN.join(", ")}`
+      : `应用分类筛选：${CATEGORY_PARENT}`
+  );
+  await openCategoryDropdown(page);
+  if (CATEGORY_CHILDREN.length) {
+    await clickCategoryOption(page, CATEGORY_PARENT, { preferExpand: true });
+    for (const child of CATEGORY_CHILDREN) {
+      await clickCategoryOption(page, child, { preferCheckbox: true });
+    }
+  } else {
+    await clickCategoryOption(page, CATEGORY_PARENT, { preferCheckbox: true });
+  }
+  await page.keyboard.press("Escape").catch(() => {});
+  await page.waitForTimeout(700);
 }
 
 async function ensureTemuHomeReady(page) {
@@ -1576,7 +1705,7 @@ async function collectImageUrlsForProduct(page, row, item, detailInfo = { imageU
   return imageUrls;
 }
 
-async function scrapeProducts(page, existingProductIds = new Set()) {
+async function scrapeProducts(page, existingProductIds = new Set(), productIndexOffset = 0) {
   await clickDailySalesDescending(page);
   const headerMap = await getHeaderMap(page) || {};
 
@@ -1639,7 +1768,7 @@ async function scrapeProducts(page, existingProductIds = new Set()) {
           console.log(`商品ID ${item.productId} 已存在于输入表格，跳过采图和记录。`);
           continue;
         }
-        const gotImages = await collectAndDownloadProductImages(page, row, item, results.length, detailInfo);
+        const gotImages = await collectAndDownloadProductImages(page, row, item, productIndexOffset + results.length, detailInfo);
         if (!gotImages) {
           await saveDebug(page, `not-enough-images-${results.length + 1}`);
           throw new Error(`商品「${item.title}」只采集到 ${item.imagePaths.length} 张参考图，低于要求的 ${MIN_IMAGES_PER_PRODUCT} 张。`);
@@ -1713,12 +1842,24 @@ async function main() {
 
   try {
     await login(page);
-    await searchKeyword(page);
     const existingProductIds = await loadExistingProductIds();
     if (existingProductIds.size) {
       console.log(`增量模式：已从输入表格读取 ${existingProductIds.size} 个商品ID，旧商品将跳过采图。`);
     }
-    const products = await scrapeProducts(page, existingProductIds);
+    const products = [];
+    for (let keywordIndex = 0; keywordIndex < KEYWORDS.length; keywordIndex += 1) {
+      const keyword = KEYWORDS[keywordIndex];
+      console.log(`开始处理搜索词：${keyword}`);
+      await searchKeyword(page, keyword, keywordIndex === 0);
+      const keywordProducts = await scrapeProducts(page, existingProductIds, products.length);
+      for (const product of keywordProducts) {
+        const productId = String(product.productId || "").trim();
+        if (productId && existingProductIds.has(productId)) continue;
+        products.push(product);
+        if (productId) existingProductIds.add(productId);
+      }
+      console.log(`搜索词「${keyword}」完成：新增 ${keywordProducts.length} 个商品，当前合计 ${products.length} 个商品。`);
+    }
     if (DEBUG_RESPONSES) {
       await fs.writeFile(path.join(OUTPUT_DIR, "debug-responses.json"), JSON.stringify(responseDebugRecords, null, 2));
     }
