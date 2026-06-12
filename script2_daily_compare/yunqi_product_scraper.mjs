@@ -538,7 +538,7 @@ async function searchKeyword(page, keyword, applyFilters = false) {
 
 async function openCategoryDropdown(page) {
   if (!CATEGORY_PARENT) return false;
-  const opened = await page.evaluate(() => {
+  const clickDropdown = async () => page.evaluate(() => {
     const visible = (el) => {
       const style = window.getComputedStyle(el);
       const rect = el.getBoundingClientRect();
@@ -551,18 +551,9 @@ async function openCategoryDropdown(page) {
     });
     const label = labels.sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left)[0];
     if (!label) return false;
-    const labelRect = label.getBoundingClientRect();
-    const candidates = Array.from(document.querySelectorAll("input, .el-input, .el-select, [role='combobox'], button, .el-button"))
-      .filter(visible)
-      .map((el) => ({ el, rect: el.getBoundingClientRect() }))
-      .filter((item) => {
-        const sameRow = item.rect.top < labelRect.bottom + 28 && item.rect.bottom > labelRect.top - 28;
-        const toRight = item.rect.left >= labelRect.right - 12;
-        const near = item.rect.left < labelRect.right + 260;
-        return sameRow && toRight && near;
-      })
-      .sort((a, b) => a.rect.left - b.rect.left);
-    const target = candidates[0]?.el;
+    const formItem = label.closest(".el-form-item") || label.parentElement;
+    const cascader = formItem?.querySelector(".el-cascader");
+    const target = cascader?.querySelector(".el-input__suffix, .el-input__suffix-inner, .el-input") || cascader;
     if (!target) return false;
     target.dispatchEvent(new MouseEvent("mousemove", { bubbles: true }));
     target.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
@@ -570,12 +561,37 @@ async function openCategoryDropdown(page) {
     target.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     return true;
   });
+
+  let opened = await clickDropdown();
   if (!opened) {
     await saveDebug(page, "category-dropdown-not-found");
     throw new Error("没有找到分类筛选下拉框。");
   }
-  await page.waitForTimeout(700);
-  return true;
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    const loaded = await page.waitForFunction(
+      () => {
+        const visible = (el) => {
+          const style = window.getComputedStyle(el);
+          const rect = el.getBoundingClientRect();
+          return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+        };
+        const panel = Array.from(document.querySelectorAll(".el-popper.outCascader, .el-cascader__dropdown, .el-cascader-panel"))
+          .find((el) => visible(el));
+        if (!panel) return false;
+        return Array.from(panel.querySelectorAll(".el-cascader-menu__list .el-cascader-node"))
+          .some((node) => visible(node) && (node.textContent || "").replace(/\s+/g, "").trim());
+      },
+      null,
+      { timeout: 15000 }
+    ).then(() => true).catch(() => false);
+    if (loaded) return true;
+    await page.keyboard.press("Escape").catch(() => {});
+    await page.waitForTimeout(800);
+    opened = await clickDropdown();
+    if (!opened) break;
+  }
+  await saveDebug(page, "category-options-not-loaded");
+  throw new Error("分类列表没有加载出来。");
 }
 
 async function clickCategoryOption(page, label, options = {}) {
@@ -591,7 +607,7 @@ async function clickCategoryOption(page, label, options = {}) {
       const rect = el.getBoundingClientRect();
       return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
     };
-    const roots = Array.from(document.querySelectorAll(".el-popper, .el-select-dropdown, .el-cascader-panel, .el-cascader-menu, body"))
+    const roots = Array.from(document.querySelectorAll(".el-popper.outCascader, .el-cascader__dropdown, .el-cascader-panel, .el-cascader-menu"))
       .filter(visible);
     const candidates = [];
     for (const root of roots) {
