@@ -384,6 +384,7 @@ async function ensurePasswordLoginMode(page) {
 }
 
 async function closePopups(page) {
+  await closeExternalTemuTabs(page);
   const selectors = [
     ".el-dialog__headerbtn",
     ".el-dialog__close",
@@ -442,6 +443,19 @@ async function closePopups(page) {
     await page.keyboard.press("Escape").catch(() => {});
     if (!clicked) break;
   }
+}
+
+async function closeExternalTemuTabs(page) {
+  const context = page.context();
+  for (const other of context.pages()) {
+    if (other === page) continue;
+    const url = other.url();
+    const title = await other.title().catch(() => "");
+    if (/temu\.com/i.test(url) || /^Temu\b/i.test(title)) {
+      await other.close({ runBeforeUnload: false }).catch(() => {});
+    }
+  }
+  await page.bringToFront().catch(() => {});
 }
 
 async function closeEmbeddedTemuProductPage(page) {
@@ -1359,7 +1373,9 @@ async function collectHoverImageUrls(page, row, rowSelector) {
 }
 
 async function openProductDetailAndExtract(page, row, rowSelector) {
+  await closeExternalTemuTabs(page);
   const rowLocator = page.locator(rowSelector || MAIN_ROW_SELECTOR).nth(row.rowIndex);
+  const popupPromise = page.context().waitForEvent("page", { timeout: 5000 }).catch(() => null);
   let clicked = await rowLocator.evaluate((row) => {
     const visible = (el) => {
       const style = window.getComputedStyle(el);
@@ -1387,6 +1403,12 @@ async function openProductDetailAndExtract(page, row, rowSelector) {
   }
 
   if (!clicked) return { productId: "", imageUrls: [] };
+  const popup = await popupPromise;
+  if (popup && popup !== page) {
+    await popup.close({ runBeforeUnload: false }).catch(() => {});
+    await page.bringToFront().catch(() => {});
+  }
+  await closeExternalTemuTabs(page);
 
   await page.waitForFunction(
     () => {
@@ -1428,6 +1450,7 @@ async function openProductDetailAndExtract(page, row, rowSelector) {
   }).catch(() => ({ productId: "", imageUrls: [] }));
 
   await closeProductDetailModal(page);
+  await closeExternalTemuTabs(page);
   return {
     productId: detail.productId || "",
     imageUrls: dedupeImageUrls(detail.imageUrls || []),
@@ -1899,7 +1922,9 @@ async function main() {
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
     });
   }
-  const page = context.pages()[0] || await context.newPage();
+  const existingYunqiPage = context.pages().find((item) => /yunqishuju\.com/i.test(item.url()));
+  const page = existingYunqiPage || await context.newPage();
+  await closeExternalTemuTabs(page);
   installResponseDebug(page);
   let completed = false;
 
