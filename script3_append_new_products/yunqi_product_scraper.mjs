@@ -550,9 +550,11 @@ async function openCategoryDropdown(page) {
       return visible(el) && text === "分类" && rect.top > 180 && rect.top < 420;
     });
     const label = labels.sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left)[0];
-    if (!label) return false;
-    const formItem = label.closest(".el-form-item") || label.parentElement;
-    const cascader = formItem?.querySelector(".el-cascader");
+    const input = Array.from(document.querySelectorAll("input[placeholder='分类筛选']"))
+      .find((el) => visible(el));
+    const cascader = input?.closest(".el-cascader") ||
+      label?.closest(".el-form-item")?.querySelector(".el-cascader") ||
+      label?.parentElement?.querySelector(".el-cascader");
     const target = cascader?.querySelector(".el-input__suffix, .el-input__suffix-inner, .el-input") || cascader;
     if (!target) return false;
     target.dispatchEvent(new MouseEvent("mousemove", { bubbles: true }));
@@ -696,6 +698,12 @@ async function applyCategoryFilter(page) {
       ? `应用分类筛选：${CATEGORY_PARENT} / ${CATEGORY_CHILDREN.join(", ")}`
       : `应用分类筛选：${CATEGORY_PARENT}`
   );
+  await page.evaluate(() => {
+    window.scrollTo(0, 0);
+    document.querySelector(".body")?.scrollTo?.(0, 0);
+    document.querySelector(".el-table__body-wrapper")?.scrollTo?.(0, 0);
+  }).catch(() => {});
+  await page.waitForTimeout(500);
   await openCategoryDropdown(page);
   if (CATEGORY_CHILDREN.length) {
     await clickCategoryOption(page, CATEGORY_PARENT, { preferExpand: true });
