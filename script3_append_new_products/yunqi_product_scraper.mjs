@@ -611,24 +611,29 @@ async function clickCategoryOption(page, label, options = {}) {
       .filter(visible);
     const candidates = [];
     for (const root of roots) {
-      for (const el of Array.from(root.querySelectorAll("li, label, .el-checkbox, .el-cascader-node, .el-select-dropdown__item, div, span"))) {
-        if (!visible(el)) continue;
-        const text = (el.textContent || "").replace(/\s+/g, " ").trim();
+      for (const el of Array.from(root.querySelectorAll(".el-cascader-node, li, label, .el-checkbox, .el-select-dropdown__item, div, span"))) {
+        const node = el.closest(".el-cascader-node") || el;
+        if (!visible(node)) continue;
+        const text = (node.textContent || "").replace(/\s+/g, " ").trim();
         if (!text || text.length > 140) continue;
         const normalized = normalize(text);
         if (normalized === needle || normalized.startsWith(`${needle} `) || normalized.includes(needle)) {
-          candidates.push(el);
+          candidates.push(node);
         }
       }
     }
-    const candidate = candidates
+    const uniqueCandidates = Array.from(new Set(candidates));
+    const candidate = uniqueCandidates
       .map((el) => ({ el, rect: el.getBoundingClientRect(), score: Math.abs(normalize(el.textContent || "").length - needle.length) }))
       .sort((a, b) => a.score - b.score || a.rect.left - b.rect.left)[0]?.el;
     if (!candidate) return false;
 
     let target = candidate;
     if (preferCheckbox) {
-      target = candidate.querySelector(".el-checkbox__input, input[type='checkbox']") ||
+      const checkbox = candidate.querySelector(".el-checkbox__input");
+      const input = candidate.querySelector("input[type='checkbox']");
+      if (checkbox?.classList.contains("is-checked") || input?.checked) return true;
+      target = candidate.querySelector(".el-checkbox__inner, .el-checkbox__input, input[type='checkbox']") ||
         candidate.closest("label")?.querySelector(".el-checkbox__input, input[type='checkbox']") ||
         candidate;
     } else if (preferExpand) {
@@ -648,6 +653,40 @@ async function clickCategoryOption(page, label, options = {}) {
     throw new Error(`没有找到分类选项：${label}`);
   }
   await page.waitForTimeout(700);
+  if (options.preferCheckbox) {
+    const checked = await page.waitForFunction(
+      (label) => {
+        const normalize = (value) => String(value || "")
+          .replace(/\s+/g, " ")
+          .replace(/[（(].*?[）)]/g, "")
+          .trim()
+          .toLowerCase();
+        const needle = normalize(label);
+        const visible = (el) => {
+          const style = window.getComputedStyle(el);
+          const rect = el.getBoundingClientRect();
+          return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+        };
+        const nodes = Array.from(document.querySelectorAll(".el-popper.outCascader .el-cascader-node, .el-cascader__dropdown .el-cascader-node"));
+        for (const node of nodes) {
+          if (!visible(node)) continue;
+          const text = (node.textContent || "").replace(/\s+/g, " ").trim();
+          const normalized = normalize(text);
+          if (!(normalized === needle || normalized.startsWith(`${needle} `) || normalized.includes(needle))) continue;
+          const checkbox = node.querySelector(".el-checkbox__input");
+          const input = node.querySelector("input[type='checkbox']");
+          return Boolean(checkbox?.classList.contains("is-checked") || input?.checked);
+        }
+        return false;
+      },
+      label,
+      { timeout: 3000 }
+    ).then(() => true).catch(() => false);
+    if (!checked) {
+      await saveDebug(page, `category-option-not-checked-${label}`);
+      throw new Error(`分类选项没有成功勾选：${label}`);
+    }
+  }
 }
 
 async function applyCategoryFilter(page) {
@@ -1866,7 +1905,7 @@ async function main() {
     for (let keywordIndex = 0; keywordIndex < KEYWORDS.length; keywordIndex += 1) {
       const keyword = KEYWORDS[keywordIndex];
       console.log(`开始处理搜索词：${keyword}`);
-      await searchKeyword(page, keyword, keywordIndex === 0);
+      await searchKeyword(page, keyword, Boolean(CATEGORY_PARENT));
       const keywordProducts = await scrapeProducts(page, existingProductIds, products.length);
       for (const product of keywordProducts) {
         const productId = String(product.productId || "").trim();
