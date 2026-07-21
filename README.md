@@ -147,11 +147,15 @@ Chrome 不是默认必需项。只有当 Playwright 自带 Chromium 无法正常
 Add python.exe to PATH
 ```
 
-### 2. 打开 Git Bash
+### 2. 打开终端
 
-本项目的启动脚本是 `.sh`，Windows 推荐使用 **Git Bash** 运行。
+Windows 可以用 **命令提示符 CMD**、**PowerShell** 或 **Git Bash** 安装依赖。
+
+但本项目的启动脚本是 `.sh`，真正运行脚本时推荐使用 **Git Bash**。
 
 ### 3. 下载项目
+
+下面示例使用 **Git Bash**。
 
 例如放在 `D:\Yunqi_Data_Web_Scraper`：
 
@@ -171,25 +175,36 @@ cd Yunqi_Data_Web_Scraper
 
 ### 4. 创建虚拟环境
 
-Windows Git Bash 使用：
+如果使用命令提示符 CMD：
 
-```bash
+```bat
 python -m venv venv
-source venv/Scripts/activate
+venv\Scripts\activate.bat
 ```
 
-如果使用 PowerShell 创建虚拟环境，则使用：
+如果使用 PowerShell：
 
 ```powershell
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 ```
 
-脚本运行仍建议回到 Git Bash。
+如果使用 Git Bash：
+
+```bash
+python -m venv venv
+. venv/Scripts/activate
+```
+
+注意：Mac/Linux 的虚拟环境激活命令不要照抄到 Windows。Windows 的 `venv` 激活路径是 `venv\Scripts\...` 或 `venv/Scripts/...`。
+
+依赖安装完成后，运行 `.sh` 脚本时请回到 Git Bash。
 
 ### 5. 安装依赖
 
 这里的 `npx playwright install chromium` 会安装 Playwright 自带的 Chromium。默认情况下，脚本会使用这个浏览器，不需要额外配置 Chrome 路径。
+
+CMD、PowerShell、Git Bash 中都可以运行：
 
 ```bash
 npm install
@@ -199,8 +214,17 @@ npx playwright install chromium
 
 ### 6. 配置 `.env`
 
+如果使用 Git Bash：
+
 ```bash
 cp .env.example .env
+notepad .env
+```
+
+如果使用 CMD 或 PowerShell：
+
+```bat
+copy .env.example .env
 notepad .env
 ```
 
@@ -245,17 +269,23 @@ cd /Users/你的用户名/Documents/project/Yunqi_Data_Web_Scraper/script1_yunqi
 
 ### Windows 运行脚本一
 
-Git Bash 中可以使用：
+请使用 **Git Bash**，不要用 CMD 直接运行 `.sh` 文件。
+
+如果项目在 `D:\Yunqi_Data_Web_Scraper`：
 
 ```bash
-cd /d/Yunqi_Data_Web_Scraper/script1_yunqi_scraper
+cd /d/Yunqi_Data_Web_Scraper
+. venv/Scripts/activate
+cd script1_yunqi_scraper
 ./run_yunqi_scraper.sh
 ```
 
-或者：
+如果项目在 `C:\Users\你的用户名\Documents\Yunqi_Data_Web_Scraper`：
 
 ```bash
-cd /c/Users/你的用户名/Documents/Yunqi_Data_Web_Scraper/script1_yunqi_scraper
+cd /c/Users/你的用户名/Documents/Yunqi_Data_Web_Scraper
+. venv/Scripts/activate
+cd script1_yunqi_scraper
 ./run_yunqi_scraper.sh
 ```
 
@@ -276,8 +306,12 @@ cd /Users/你的用户名/Documents/project/Yunqi_Data_Web_Scraper/script2_daily
 
 ### Windows 运行脚本二
 
+请使用 **Git Bash**。
+
 ```bash
-cd /d/Yunqi_Data_Web_Scraper/script2_daily_compare
+cd /d/Yunqi_Data_Web_Scraper
+. venv/Scripts/activate
+cd script2_daily_compare
 ./run_yunqi_daily_compare.sh "C:/Users/你的用户名/Desktop/昨日表格.xlsx"
 ```
 
@@ -302,8 +336,12 @@ cd /Users/你的用户名/Documents/project/Yunqi_Data_Web_Scraper/script3_appen
 
 ### Windows 运行脚本三
 
+请使用 **Git Bash**。
+
 ```bash
-cd /d/Yunqi_Data_Web_Scraper/script3_append_new_products
+cd /d/Yunqi_Data_Web_Scraper
+. venv/Scripts/activate
+cd script3_append_new_products
 ./run_yunqi_append_new_products.sh "C:/Users/你的用户名/Desktop/已有表格.xlsx"
 ```
 
