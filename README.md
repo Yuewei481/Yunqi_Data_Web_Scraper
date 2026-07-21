@@ -1,47 +1,64 @@
-# Yunqi_Data_Web_Script
+# 云启数据爬虫
 
-云启数据爬虫。项目包含三个脚本，用于从云启数据 Temu 页面采集满足条件的商品，并生成、对比或更新 Excel 选品表格。
+云启数据爬虫用于从云启数据 Temu 页面采集满足条件的商品，并生成、对比或更新 Excel 选品表格。
 
-## 功能
+项目里有三个脚本：
 
-- 脚本一：生成当天完整选品表格。
-- 脚本二：生成当天表格，并与昨天表格对比，输出新增/移除商品。
-- 脚本三：输入一个已有表格，只把当天新增商品追加到这个表格底部。
+- 脚本一：生成一张新的今日选品表格。
+- 脚本二：先生成今日选品表格，再和输入的昨日表格对比，输出新增/移除商品差异表。
+- 脚本三：输入一张已有选品表格，只把今日新增商品追加到这张表格底部，不删除原有商品。
 
 默认筛选条件：
 
 - 日销 `>= 30`
 - 月销 `>= 1000`
-- 关键词可填写一个，也可用英文逗号分隔多个；多个关键词会依次搜索并合并写入同一张表
-- 可选 Temu 大分类/小分类限制；配置分类后，每个关键词搜索前都会重新确认并应用该分类
-- 商品图悬浮后默认等待 `3000ms` 再读取图片
+- 商品图片悬浮后等待 `3000ms` 再读取
+- 支持多个关键词，使用英文逗号分隔
+- 支持 Temu 大分类/小分类筛选；配置分类后，每个关键词搜索前都会重新应用分类
 
-这些都可以在 `.env` 中修改。
+这些条件都在项目根目录的 `.env` 文件里修改。
 
-## 一、Mac 安装
+## 一、项目结构
+
+```text
+Yunqi_Data_Web_Scraper/
+├── .env.example
+├── README.md
+├── requirements.txt
+├── package.json
+├── templates/
+│   └── 选品表格-模板.xlsx
+├── script1_yunqi_scraper/
+│   └── run_yunqi_scraper.sh
+├── script2_daily_compare/
+│   └── run_yunqi_daily_compare.sh
+└── script3_append_new_products/
+    └── run_yunqi_append_new_products.sh
+```
+
+注意：`.env` 必须放在项目根目录，也就是和 `README.md` 同一层。
+
+## 二、Mac 安装教程
+
+下面步骤只需要在第一次安装时做一次。
 
 ### 1. 安装基础软件
 
-需要先安装：
+Mac 需要：
 
 - Git
 - Node.js 22 LTS 或更高版本
 - Python 3
-- Google Chrome，可选；默认使用 Playwright 自带的 Chromium
+- Playwright 自带 Chromium，安装依赖时会下载
+- Google Chrome 可选，默认不需要
 
-如果使用 Homebrew：
+如果你使用 Homebrew，可以运行：
 
 ```bash
 brew install git node python
 ```
 
-如果你想改用自己电脑上的 Google Chrome，再安装 Chrome：
-
-```bash
-brew install --cask google-chrome
-```
-
-检查版本：
+检查是否安装成功：
 
 ```bash
 git --version
@@ -49,7 +66,17 @@ node -v
 python3 --version
 ```
 
+如果 `node -v` 显示的是 `v18` 或更低版本，建议先升级到 Node.js 22 LTS 或更高版本。
+
 ### 2. 下载项目
+
+下面示例把项目放在：
+
+```text
+/Users/你的用户名/Documents/project/Yunqi_Data_Web_Scraper
+```
+
+运行：
 
 ```bash
 cd ~/Documents
@@ -59,18 +86,32 @@ git clone https://github.com/Yuewei481/Yunqi_Data_Web_Scraper.git
 cd Yunqi_Data_Web_Scraper
 ```
 
-### 3. 创建虚拟环境
+如果你已经下载过项目，只需要进入项目根目录：
 
-Mac 使用：
+```bash
+cd /Users/你的用户名/Documents/project/Yunqi_Data_Web_Scraper
+```
+
+### 3. 创建并启动 Python 虚拟环境
+
+必须在项目根目录运行：
 
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 ```
 
+启动成功后，终端前面通常会出现：
+
+```text
+(venv)
+```
+
+如果没有看到 `(venv)`，说明虚拟环境没有启动成功，后面运行脚本可能会出现 `No module named openpyxl` 之类的错误。
+
 ### 4. 安装依赖
 
-这里的 `npx playwright install chromium` 会安装 Playwright 自带的 Chromium。默认情况下，脚本会使用这个浏览器，不需要额外配置 Chrome 路径。
+确认终端前面已经有 `(venv)`，然后运行：
 
 ```bash
 npm install
@@ -78,70 +119,63 @@ pip install -r requirements.txt
 npx playwright install chromium
 ```
 
-### 5. 配置 `.env`
+`npx playwright install chromium` 会安装 Playwright 自带的 Chromium。默认情况下脚本使用这个浏览器，不需要另外配置 Chrome 路径。
+
+### 5. 创建并修改 `.env`
+
+仍然在项目根目录运行：
 
 ```bash
 cp .env.example .env
+open -e .env
+```
+
+如果 `open -e .env` 没打开，也可以用：
+
+```bash
 nano .env
 ```
 
-Mac 示例：
+Mac 推荐配置：
 
 ```bash
 YUNQI_USERNAME="你的云启账号"
 YUNQI_PASSWORD="你的云启密码"
-YUNQI_KEYWORD="关键词一, 关键词二"
+
+YUNQI_KEYWORD="pop up greeting card"
 DAILY_MIN=30
 MONTHLY_MIN=1000
 HOVER_IMAGE_WAIT_MS=3000
+
 YUNQI_CATEGORY_PARENT=""
 YUNQI_CATEGORY_CHILDREN=""
+
 EXCEL_TEMPLATE=templates/选品表格-模板.xlsx
+OUTPUT_DIR="/Users/你的用户名/Desktop/excel_output"
+
 HEADLESS=0
 PYTHON=python3
 ```
 
-默认不用填写 `CHROME_PATH`。如果 Playwright 自带 Chromium 无法正常运行，或者你想强制使用本机 Chrome，再添加：
+修改完 `.env` 后记得保存。
 
-```bash
-CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-```
+## 三、Windows 安装教程
 
-关键词和分类说明：
+下面步骤只需要在第一次安装时做一次。
 
-```bash
-# 多个关键词用英文逗号分隔，脚本会依次搜索并写入同一张表格
-YUNQI_KEYWORD="关键词一, 关键词二"
-
-# 不需要分类限制时留空
-YUNQI_CATEGORY_PARENT=""
-YUNQI_CATEGORY_CHILDREN=""
-
-# 只限制大分类时，只填写大分类
-YUNQI_CATEGORY_PARENT="大分类名称"
-YUNQI_CATEGORY_CHILDREN=""
-
-# 限制到多个小分类时，小分类用英文逗号分隔
-YUNQI_CATEGORY_PARENT="大分类名称"
-YUNQI_CATEGORY_CHILDREN="小分类一, 小分类二"
-```
-
-如果同时填写了多个关键词和分类限制，脚本会在每一个关键词搜索前都重新确认分类。例如配置了 `Electronics` 和 `Keyboards, Mice & Accessories` 后，`关键词一`、`关键词二` 都会先处于这个分类下再开始搜索。
-
-## 二、Windows 安装
+Windows 推荐全程使用 **Git Bash** 操作本项目。原因是项目启动脚本是 `.sh` 文件，CMD 不能直接运行 `.sh`。
 
 ### 1. 安装基础软件
 
-Windows 需要先安装：
+Windows 需要：
 
-- Git for Windows
+- Git for Windows，安装后会有 Git Bash
 - Node.js 22 LTS 或更高版本
 - Python 3
-- Google Chrome，可选；默认使用 Playwright 自带的 Chromium
+- Playwright 自带 Chromium，安装依赖时会下载
+- Google Chrome 可选，默认不需要
 
-Chrome 不是默认必需项。只有当 Playwright 自带 Chromium 无法正常运行，或者你想强制使用本机 Chrome 时，才需要安装并配置 `CHROME_PATH`。
-
-安装 Python 时建议勾选：
+安装 Python 时，一定建议勾选：
 
 ```text
 Add python.exe to PATH
@@ -149,47 +183,76 @@ Add python.exe to PATH
 
 ### 2. 打开 Git Bash
 
-本项目的启动脚本是 `.sh`，Windows 推荐使用 **Git Bash** 运行。
+在 Windows 搜索框里搜索：
+
+```text
+Git Bash
+```
+
+然后打开它。
+
+后面安装环境、启动环境、运行脚本，都建议使用这个 Git Bash。
 
 ### 3. 下载项目
 
-例如放在 `D:\Yunqi_Data_Web_Scraper`：
+下面示例把项目放在桌面：
+
+```text
+C:\Users\你的用户名\Desktop\Yunqi_Data_Web_Scraper
+```
+
+在 Git Bash 里运行：
 
 ```bash
-cd /d
+cd ~/Desktop
 git clone https://github.com/Yuewei481/Yunqi_Data_Web_Scraper.git
 cd Yunqi_Data_Web_Scraper
 ```
 
-如果放在 Documents：
+如果你已经下载过项目，只需要进入项目根目录。比如项目在桌面：
 
 ```bash
-cd ~/Documents
-git clone https://github.com/Yuewei481/Yunqi_Data_Web_Scraper.git
-cd Yunqi_Data_Web_Scraper
+cd /c/Users/你的用户名/Desktop/Yunqi_Data_Web_Scraper
 ```
 
-### 4. 创建虚拟环境
+如果你不知道路径怎么写，可以输入 `cd `，注意 `cd` 后面有一个空格，然后把项目文件夹拖进 Git Bash，再按回车。
 
-Windows Git Bash 使用：
+### 4. 创建并启动 Python 虚拟环境
+
+必须在项目根目录运行：
 
 ```bash
 python -m venv venv
-source venv/Scripts/activate
+. venv/Scripts/activate
 ```
 
-如果使用 PowerShell 创建虚拟环境，则使用：
+启动成功后，Git Bash 前面通常会出现：
 
-```powershell
-python -m venv venv
-.\venv\Scripts\Activate.ps1
+```text
+(venv)
 ```
 
-脚本运行仍建议回到 Git Bash。
+如果没有看到 `(venv)`，说明虚拟环境没有启动成功。后面运行脚本可能会出现：
+
+```text
+ModuleNotFoundError: No module named 'openpyxl'
+```
+
+或者：
+
+```text
+Error: Python 写表失败
+```
+
+Windows 重点说明：
+
+- 如果你用 Git Bash 创建了 `venv`，以后运行脚本前也要在 Git Bash 里用 `. venv/Scripts/activate` 启动这个环境。
+- 不要在 CMD 里运行 `./run_yunqi_scraper.sh`，CMD 不能直接运行 `.sh` 文件。
+- PowerShell/CMD 可以创建虚拟环境，但本项目实际运行脚本仍推荐回到 Git Bash。
 
 ### 5. 安装依赖
 
-这里的 `npx playwright install chromium` 会安装 Playwright 自带的 Chromium。默认情况下，脚本会使用这个浏览器，不需要额外配置 Chrome 路径。
+确认 Git Bash 前面已经有 `(venv)`，然后运行：
 
 ```bash
 npm install
@@ -197,169 +260,377 @@ pip install -r requirements.txt
 npx playwright install chromium
 ```
 
-### 6. 配置 `.env`
+`npx playwright install chromium` 会安装 Playwright 自带的 Chromium。默认情况下脚本使用这个浏览器，不需要另外配置 Chrome 路径。
+
+如果你在同一台电脑、同一个 Windows 用户下已经安装过 Playwright Chromium，可以先不重复安装。直接运行脚本，如果报找不到浏览器，再运行：
+
+```bash
+npx playwright install chromium
+```
+
+### 6. 创建并修改 `.env`
+
+仍然在项目根目录运行：
 
 ```bash
 cp .env.example .env
 notepad .env
 ```
 
-Windows 示例：
+Windows 推荐配置：
 
 ```bash
 YUNQI_USERNAME="你的云启账号"
 YUNQI_PASSWORD="你的云启密码"
-YUNQI_KEYWORD="关键词一, 关键词二"
+
+YUNQI_KEYWORD="pop up greeting card"
 DAILY_MIN=30
 MONTHLY_MIN=1000
 HOVER_IMAGE_WAIT_MS=3000
+
 YUNQI_CATEGORY_PARENT=""
 YUNQI_CATEGORY_CHILDREN=""
+
 EXCEL_TEMPLATE=templates/选品表格-模板.xlsx
+OUTPUT_DIR="C:/Users/你的用户名/Desktop/excel_output"
+
 HEADLESS=0
 PYTHON=python
 ```
 
-默认不用填写 `CHROME_PATH`。如果 Playwright 自带 Chromium 无法正常运行，或者你想强制使用本机 Chrome，再添加：
+修改完 `.env` 后按 `Ctrl + S` 保存。
+
+## 四、`.env` 配置说明
+
+`.env` 里不要在等号两边加空格。
+
+正确：
+
+```bash
+YUNQI_KEYWORD="keyboard"
+```
+
+错误：
+
+```bash
+YUNQI_KEYWORD = "keyboard"
+```
+
+常用配置：
+
+```bash
+YUNQI_USERNAME="你的云启账号"
+YUNQI_PASSWORD="你的云启密码"
+```
+
+云启数据账号和密码。
+
+```bash
+YUNQI_KEYWORD="pop up greeting card, keyboard"
+```
+
+搜索关键词。多个关键词用英文逗号分隔。脚本会依次搜索，并把符合条件的商品写进同一张表格。
+
+```bash
+DAILY_MIN=30
+MONTHLY_MIN=1000
+```
+
+筛选日销和月销。表示只记录日销大于等于 30、月销大于等于 1000 的商品。
+
+```bash
+HOVER_IMAGE_WAIT_MS=3000
+```
+
+鼠标悬浮到商品图后等待多久再读取图片。`3000` 表示等待 3 秒。
+
+```bash
+YUNQI_CATEGORY_PARENT=""
+YUNQI_CATEGORY_CHILDREN=""
+```
+
+分类筛选。两个都留空时，不限制分类。
+
+只限制大分类：
+
+```bash
+YUNQI_CATEGORY_PARENT="Electronics"
+YUNQI_CATEGORY_CHILDREN=""
+```
+
+限制大分类下的小分类：
+
+```bash
+YUNQI_CATEGORY_PARENT="Electronics"
+YUNQI_CATEGORY_CHILDREN="Keyboards, Mice & Accessories"
+```
+
+多个小分类用英文逗号分隔：
+
+```bash
+YUNQI_CATEGORY_PARENT="Appliances"
+YUNQI_CATEGORY_CHILDREN="Air Quality, Ice Maker"
+```
+
+```bash
+EXCEL_TEMPLATE=templates/选品表格-模板.xlsx
+```
+
+Excel 模板路径。一般不要改。
+
+```bash
+OUTPUT_DIR="C:/Users/你的用户名/Desktop/excel_output"
+```
+
+输出目录。建议使用绝对路径。Mac 可以写 `/Users/...`，Windows 推荐写 `C:/Users/...`。
+
+```bash
+HEADLESS=0
+```
+
+是否显示浏览器。`0` 表示显示浏览器，`1` 表示无头模式。建议使用 `0`。
+
+```bash
+PYTHON=python
+```
+
+Python 命令。Windows 通常写 `python`，Mac 通常写 `python3`。
 
 ```bash
 CHROME_PATH="C:/Program Files/Google/Chrome/Application/chrome.exe"
 ```
 
-如果 Chrome 安装在另一个目录，可以改成：
+默认不要写这一行。只有 Playwright 自带 Chromium 不能运行，或者你想强制使用本机 Chrome 时才填写。
+
+## 五、以后每次运行前都要做什么
+
+每次重新打开终端，都需要先进入项目根目录并启动虚拟环境。
+
+### Mac 每次运行前
 
 ```bash
-CHROME_PATH="C:/Program Files (x86)/Google/Chrome/Application/chrome.exe"
+cd /Users/你的用户名/Documents/project/Yunqi_Data_Web_Scraper
+source venv/bin/activate
 ```
 
-## 三、运行脚本
+看到 `(venv)` 后，再进入脚本文件夹运行脚本。
 
-下面的路径请换成你本机项目的绝对路径。
+### Windows 每次运行前
+
+打开 Git Bash，然后运行：
+
+```bash
+cd /c/Users/你的用户名/Desktop/Yunqi_Data_Web_Scraper
+. venv/Scripts/activate
+```
+
+看到 `(venv)` 后，再进入脚本文件夹运行脚本。
+
+如果项目不在桌面，可以输入 `cd `，把项目文件夹拖入 Git Bash，再按回车。
+
+## 六、脚本一：生成新的今日选品表格
+
+用途：创建一张新的选品表格，内容是今天搜索后符合条件的商品。
 
 ### Mac 运行脚本一
 
 ```bash
-cd /Users/你的用户名/Documents/project/Yunqi_Data_Web_Scraper/script1_yunqi_scraper
+cd /Users/你的用户名/Documents/project/Yunqi_Data_Web_Scraper
+source venv/bin/activate
+cd script1_yunqi_scraper
 ./run_yunqi_scraper.sh
 ```
 
 ### Windows 运行脚本一
 
-Git Bash 中可以使用：
+在 Git Bash 里运行：
 
 ```bash
-cd /d/Yunqi_Data_Web_Scraper/script1_yunqi_scraper
-./run_yunqi_scraper.sh
-```
-
-或者：
-
-```bash
-cd /c/Users/你的用户名/Documents/Yunqi_Data_Web_Scraper/script1_yunqi_scraper
+cd /c/Users/你的用户名/Desktop/Yunqi_Data_Web_Scraper
+. venv/Scripts/activate
+cd script1_yunqi_scraper
 ./run_yunqi_scraper.sh
 ```
 
 脚本一输出完整选品表格。
 
-默认输出位置：
+如果 `.env` 设置了：
+
+```bash
+OUTPUT_DIR="C:/Users/你的用户名/Desktop/excel_output"
+```
+
+那么输出 Excel 会在这个文件夹里。
+
+如果没有设置 `OUTPUT_DIR`，默认输出在：
 
 ```text
-script1_yunqi_scraper/outputs/yunqi-pop-up-greeting-card/选品表格-pop-up-greeting-card-YYYY-MM-DD.xlsx
+script1_yunqi_scraper/outputs/yunqi-pop-up-greeting-card/
 ```
+
+## 七、脚本二：生成今日表格并和昨日表格对比
+
+用途：输入一张昨日表格，脚本会先跑出今日表格，然后比较商品 ID，输出差异表。
+
+差异表会标记：
+
+- 今日新增：今天满足条件，昨日不在表格里
+- 今日移除：昨日满足条件，今天不在表格里
 
 ### Mac 运行脚本二
 
 ```bash
-cd /Users/你的用户名/Documents/project/Yunqi_Data_Web_Scraper/script2_daily_compare
+cd /Users/你的用户名/Documents/project/Yunqi_Data_Web_Scraper
+source venv/bin/activate
+cd script2_daily_compare
 ./run_yunqi_daily_compare.sh "/Users/你的用户名/Desktop/昨日表格.xlsx"
+```
+
+指定差异表输出位置：
+
+```bash
+./run_yunqi_daily_compare.sh "/Users/你的用户名/Desktop/昨日表格.xlsx" "/Users/你的用户名/Desktop/差异表.xlsx"
 ```
 
 ### Windows 运行脚本二
 
+在 Git Bash 里运行：
+
 ```bash
-cd /d/Yunqi_Data_Web_Scraper/script2_daily_compare
+cd /c/Users/你的用户名/Desktop/Yunqi_Data_Web_Scraper
+. venv/Scripts/activate
+cd script2_daily_compare
 ./run_yunqi_daily_compare.sh "C:/Users/你的用户名/Desktop/昨日表格.xlsx"
 ```
 
-也可以指定差异表输出路径：
+指定差异表输出位置：
 
 ```bash
 ./run_yunqi_daily_compare.sh "C:/Users/你的用户名/Desktop/昨日表格.xlsx" "C:/Users/你的用户名/Desktop/差异表.xlsx"
 ```
 
-默认输出位置：
+默认输出在：
 
 ```text
-script2_daily_compare/outputs/yunqi-pop-up-greeting-card/选品表格-pop-up-greeting-card-差异-YYYY-MM-DD.xlsx
+script2_daily_compare/outputs/yunqi-pop-up-greeting-card/
 ```
+
+如果 `.env` 设置了 `OUTPUT_DIR`，则输出到 `OUTPUT_DIR`。
+
+## 八、脚本三：把今日新增商品追加到已有表格
+
+用途：输入一张已有选品表格，脚本会搜索今天符合条件的商品。如果商品 ID 已经在输入表格里，就跳过；如果商品 ID 不在输入表格里，就追加到表格底部。
+
+脚本三不会删除旧商品。
+
+脚本三最终修改的是你输入的那张 Excel 表格本身。
 
 ### Mac 运行脚本三
 
 ```bash
-cd /Users/你的用户名/Documents/project/Yunqi_Data_Web_Scraper/script3_append_new_products
+cd /Users/你的用户名/Documents/project/Yunqi_Data_Web_Scraper
+source venv/bin/activate
+cd script3_append_new_products
 ./run_yunqi_append_new_products.sh "/Users/你的用户名/Desktop/已有表格.xlsx"
 ```
 
 ### Windows 运行脚本三
 
+在 Git Bash 里运行：
+
 ```bash
-cd /d/Yunqi_Data_Web_Scraper/script3_append_new_products
+cd /c/Users/你的用户名/Desktop/Yunqi_Data_Web_Scraper
+. venv/Scripts/activate
+cd script3_append_new_products
 ./run_yunqi_append_new_products.sh "C:/Users/你的用户名/Desktop/已有表格.xlsx"
 ```
 
-脚本三不会生成新的最终表格，而是直接修改输入的原有表格：
+运行完成后，直接打开你输入的那张 Excel 表格查看结果。新增商品会追加在表格最下面。
 
-- 已存在的商品 ID：跳过
-- 今日新增商品 ID：采集完整信息并追加到表格底部
-- 今日消失的商品 ID：不删除，继续保留
+## 九、运行时注意事项
 
-## 四、修改输出位置
+- 运行脚本时不要关闭脚本打开的浏览器。
+- 浏览器可以放到后面或拖到屏幕边上，但不要最小化。
+- 云启数据登录和 Temu 页面加载可能较慢，请等待。
+- 如果卡在登录界面，可以手动登录。
+- 如果网络错误或网站超时，可以按 `Ctrl + C` 停止脚本，然后重新运行。
+- `.env` 修改后必须保存，再重新运行脚本才会生效。
+- Windows 路径推荐使用 `C:/Users/...`，不要使用中文引号。
+- 关键词、分类名、路径里的逗号和引号都建议使用英文输入法。
 
-默认情况下，脚本会输出到当前脚本文件夹里的：
+## 十、常见错误
 
-```text
-outputs/yunqi-pop-up-greeting-card/
-```
+### 1. `No module named 'openpyxl'`
 
-### Mac 输出目录示例
-
-在 `.env` 里添加：
-
-```bash
-OUTPUT_DIR="/Users/你的用户名/Desktop/yunqi-outputs"
-```
-
-### Windows 输出目录示例
-
-在 `.env` 里添加：
-
-```bash
-OUTPUT_DIR="C:/Users/你的用户名/Desktop/yunqi-outputs"
-```
-
-也可以只对某一次运行临时指定：
+原因：没有启动虚拟环境，或者没有安装 Python 依赖。
 
 Mac：
 
 ```bash
-OUTPUT_DIR="/Users/你的用户名/Desktop/yunqi-outputs" ./run_yunqi_scraper.sh
+cd /Users/你的用户名/Documents/project/Yunqi_Data_Web_Scraper
+source venv/bin/activate
+pip install -r requirements.txt
 ```
 
 Windows Git Bash：
 
 ```bash
-OUTPUT_DIR="C:/Users/你的用户名/Desktop/yunqi-outputs" ./run_yunqi_scraper.sh
+cd /c/Users/你的用户名/Desktop/Yunqi_Data_Web_Scraper
+. venv/Scripts/activate
+pip install -r requirements.txt
 ```
 
-脚本一会把完整选品表格输出到这个目录。脚本二会把今日临时表格和差异表输出到这个目录。脚本三会把临时今日表格放到这个目录，但最终仍然直接修改你输入的 Excel 表格本身。
+### 2. `Failed to launch chromium`
 
-## 五、常见注意事项
+原因：Playwright 自带 Chromium 没安装，或者浏览器缓存损坏。
 
-- `.env` 中只要值里有空格，就必须使用英文双引号，例如 `YUNQI_KEYWORD="pop up greeting card"`。
-- Windows 路径推荐使用 `/d/...` 或 `C:/...`，不要混用中文引号。
-- 第一次运行会打开浏览器并登录云启数据，网站响应较慢时请等待。
-- 如果登录失败，多数是网络或网站超时，可以重新运行。
+运行：
 
-## 六、Codex 自动化
+```bash
+npx playwright install chromium
+```
 
-本项目也可以链接到 Codex 自动化里，让 Codex 每天自动运行脚本来爬取数据。
+### 3. Windows 运行 `.sh` 失败
+
+原因：你可能在 CMD 里运行了 `.sh` 文件。
+
+解决方法：打开 Git Bash，再运行脚本。
+
+### 4. `.env` 修改后没有生效
+
+检查：
+
+- `.env` 是否在项目根目录
+- 是否保存了文件
+- 等号两边是否没有空格
+- 字符串是否使用英文双引号
+
+## 十一、更新项目
+
+如果 GitHub 上有新版代码，在项目根目录运行：
+
+Mac：
+
+```bash
+cd /Users/你的用户名/Documents/project/Yunqi_Data_Web_Scraper
+git pull
+source venv/bin/activate
+npm install
+pip install -r requirements.txt
+```
+
+Windows Git Bash：
+
+```bash
+cd /c/Users/你的用户名/Desktop/Yunqi_Data_Web_Scraper
+git pull
+. venv/Scripts/activate
+npm install
+pip install -r requirements.txt
+```
+
+如果脚本提示浏览器版本不匹配，再运行：
+
+```bash
+npx playwright install chromium
+```
